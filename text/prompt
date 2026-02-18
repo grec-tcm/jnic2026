@@ -1,0 +1,128 @@
+prompt = f"""
+Analyze the provided CVE data.
+
+========================
+PART 1 — HEALTHCARE RELEVANCE
+========================
+
+RULES & DEFINITIONS:
+
+1. Relevance: A CVE is Healthcare Relevant ONLY if the software is a specialized clinical tool or a core medical system.
+Apply a strict "Primary Purpose" test:
+   - Target Systems: Only include specialized software like EHR/EMR, PACS, medical device firmware (e.g., infusion pumps, MRIs), clinical middleware or Clinical Management Systems.
+   - The "Collateral Support" Exclusion: Explicitly exclude general-purpose IT tools (e.g., GIMP, Photoshop, Ethereal, Wireshark, Chrome, Excel) even if they can parse medical file formats (DICOM, HL7, FHIR) or edit medical reports.
+   - Format vs. Function: The ability to read a medical file does not make a general tool a medical system. Unless the vulnerability is specifically described as part of a certified medical device implementation, it is Not Relevant.
+   
+   Reasoning Check: You must first identify if the product is marketed for general use or clinical use. If it includes medical keywords like "health", "care", "healthcare", "patient" or "medic" among others or it specifically mentions "patients", it is most likely relevant to medical systems. If it is general-purpose, the final answer must be "FALSE," regardless of DICOM or medical format support.
+   
+2. Vendors & Products:
+   - Extract ONLY explicitly mentioned vendors/products. Do not include version numbers. Normalize capitalization.
+3. Category (Choose ONE based on the primary function. If strictly "Not Relevant" above, return null):
+   1: Core Patient Records and Administration (EHR/PAS)
+      SCOPE: Centralized systems for patient history, demographics, billing, and admission/discharge (ADT).
+      EXAMPLES: Epic, Cerner, OpenEMR, Patient Portals, Registration Kiosks.
+   2: Departmental Clinical Systems
+      SCOPE: Specialized software managing workflows for specific hospital departments.
+      EXAMPLES: LIS (Laboratory Information Systems), RIS (Radiology Information Systems), Pharmacy Management, Surgical Planning Software, Pathology tools.
+      EXCLUSION: If it stores images long-term, choose Category 4.
+   3: Medical Devices and IoMT (Internet of Medical Things)
+      SCOPE: Hardware or embedded software responsible for direct patient care, monitoring, or raw data acquisition.
+      EXAMPLES: MRI/CT Scanners (firmware), Infusion Pumps, Pacemakers, Bedside Vitals Monitors, Ventilators.
+      EXCLUSION: If it is a PC workstation *viewing* the data, choose Category 2.
+   4: Medical Imaging and Archiving (PACS/VNA)
+      SCOPE: Systems dedicated specifically to the storage, long-term archiving, and retrieval of medical images.
+      EXAMPLES: PACS servers, VNA (Vendor Neutral Archive), DICOM storage nodes.
+   5: Healthcare Interoperability and Infrastructure
+      SCOPE: Middleware that translates or moves data between different medical systems.
+      EXAMPLES: Interface Engines (Mirth, Rhapsody), FHIR Servers, HL7 Gateways, HIE (Health Information Exchange) nodes.
+4. Component (Choose ONE, or null if not relevant, reason before choosing and choose the primary one): "Firmware", "Hardware", or "Software".
+
+========================
+PART 2 — MITRE ATT&CK CLASSIFICATION
+========================
+
+Classify this CVE according to the single MOST RELEVANT MITRE ATT&CK Tactic.
+
+1. PRIORITY RULE (The "Kill Chain" Tie-Breaker):
+   If a vulnerability allows multiple tactics, choose the one that occurs EARLIEST in the attack chain, unless the vulnerability is specifically a post-exploitation tool.
+   
+   - PRIORITY 1: Initial Access (If the CVE allows an outsider to get in).
+   - PRIORITY 2: Execution (If the CVE allows running code but requires prior access).
+   - PRIORITY 3: Privilege Escalation (If the CVE allows a low-privilege user to become admin).
+   - PRIORITY 4: Impact (If the CVE is purely Denial of Service).
+
+2. DEFINITIONS & MAPPING GUIDE:
+
+   * Initial Access:
+     - Use this if the vulnerability is "Unauthenticated Remote Code Execution" or "Default Credentials".
+     - Key phrase: "remote attacker can execute arbitrary code without authentication."
+
+   * Execution:
+     - Use this if the vulnerability requires the user to open a file (e.g., Phishing attachment) or if the attacker must already be logged in to run the code.
+     - Key phrase: "user interaction is required" or "authenticated attacker."
+
+   * Privilege Escalation:
+     - Use this if the attacker is already on the system (local) but gains Root/Admin rights.
+     - Key phrase: "local user," "gain elevated privileges."
+
+   * Defense Evasion:
+     - Use this if the CVE is specifically about bypassing a security feature (e.g., bypassing a firewall, EDR, or Gatekeeper).
+
+   * Credential Access:
+     - Use this for "Hardcoded Passwords" or "Memory Dump" vulnerabilities where the goal is stealing keys/passwords.
+
+   * Impact:
+     - Use this for Denial of Service (DoS) or Data Destruction/Ransomware capabilities where no further access is gained.
+
+   * Lateral Movement:
+     - Use this rarely, typically for vulnerabilities in SMB, RDP, or internal routing protocols used to move between servers.
+
+3. EXCLUSIONS:
+   - Do NOT use "Reconnaissance" or "Resource Development" (these are pre-attack phases, not software vulnerabilities).
+   - Do NOT use "Collection" unless the CVE is specifically an Information Disclosure bug (and even then, check if Credential Access is a better fit).
+
+4. TASKS:
+   - Analyze the "Description" and "CVSS Vector" (if available) to determine the attack vector (Network vs Local) and Privileges Required.
+   - Select ONE allowed tactic from the list below.
+   - Provide a confidence score (0-100).
+   - Provide a score for each possible phase match in the attack_phase_probability_matrix.
+   - If multiple categories of the MITTRE ATTACK matrix apply to the CVE, choose the one that has the highest confidence.
+   - If evidence that the CVE belongs to a certain category is weak or ambiguous, choose the Unknown (15) category to avoid misclassification.
+
+==============
+OUTPUT SCHEMA
+==============
+
+CRITICAL: Output ONLY JSON.
+Do not include explanations outside JSON.
+Do not include summaries.
+Start immediately with '{{' and end with '}}'.
+
+{{
+  "cve_id": "string",
+  "vendors": [],
+  "products": [],
+  "relevance": boolean,
+  "relevance_confidence": int (0-100),
+  "relevance_reasoning": string,
+  "category": int,
+  "category_confidence": int (0-100),
+  "category_name": string ["Data identity and management" | "Departmental Information systems" | "Data Generation Systems" | "Storage and Archiving" | "Interoperability"],
+  "category_reasoning": string,
+  "component": string ["Firmware" | "Hardware" | "Software" | "Operating System" | "Library"],
+  "component_confidence": int (0-100),
+  "component_reasoning": "",
+  "attack_phase": string ["Reconnaissance" | "Resource Development" | "Initial Access" | "Execution" | "Persistence" | "Privilege Escalation" | "Defense Evasion"| "Credential Access" | Discovery" |"Lateral Movement" | "Collection" | "Command and Control" | "Exfiltration" | "Impact"],
+  "attack_phase_confidence":  int (0-100),
+  "attack_phase_probability_matrix": {{"1": int , "2": int, "3": int, "4": int, "5": int, "6": int, "7": int, "8": int, "9": int, "10": int, "11": int, "12": int, "13": int, "14": int}},
+  "attack_phase_reasoning": string
+}}
+
+========================
+CVE DATA
+========================
+
+<cve_data>
+{full_json_str}
+</cve_data>
+"""

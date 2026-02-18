@@ -1,0 +1,21 @@
+{
+  "CVE_ID": "cve_id",
+  "HealthcareRelevant": "relevance",
+  "MedicalRelevanceConfidence": "relevance_confidence",
+  "RelevanceReasoning": "relevance_reasoning",
+  "Vendors": "vendors",
+  "Products": "products",
+  "Category": "category",
+  "CategoryName": "category_name",
+  "CategoryConfidence": "category_confidence",
+  "CategoryReasoning": "category_reasoning",
+  "ComponentType": "component",
+  "ComponentConfidence": "component_confidence",
+  "ComponentReasoning": "component_reasoning",
+  "AttackPhase": "attack_phase",
+  "AttackPhaseConfidence": "attack_phase_confidence",
+  "AttackPhaseReasoning": "attack_phase_reasoning",
+  "AttackPhaseProbabilityMatrix": "attack_phase_probability_matrix",
+  "CVSS_score": "CVSS_score",
+  "CVSS_version": "CVSS_version"
+}

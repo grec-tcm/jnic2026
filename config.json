@@ -1,0 +1,13 @@
+{
+  "json_dir": "json",
+  "out_dir": "output",
+  "ollama_url": "http://127.0.0.1:11434/v1/chat/completions",
+  "model": "gemma3:12b",
+  "workers": 2,
+  "attempts": 4,
+  "timeout": 120,
+  "retry_delay": 2,
+  "log_file": "cve_errors.log",
+  "failed_log": "cve_failed.txt",
+  "prompt_file": "text/prompt.txt"
+}
