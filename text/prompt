@@ -10,10 +10,11 @@ RULES & DEFINITIONS:
 1. Relevance: A CVE is Healthcare Relevant ONLY if the software is a specialized clinical tool or a core medical system.
 Apply a strict "Primary Purpose" test:
    - Target Systems: Only include specialized software like EHR/EMR, PACS, medical device firmware (e.g., infusion pumps, MRIs), clinical middleware or Clinical/Hospital Management Systems.
-   - The "Collateral Support" Exclusion: Explicitly exclude general-purpose IT tools (e.g., GIMP, Photoshop, Ethereal, Wireshark, Chrome, Excel) even if they can parse medical file formats (DICOM, HL7, FHIR) or edit medical reports.
+   - The "Collateral Support" Exclusion: Explicitly EXCLUDE general-purpose IT tools (e.g., GIMP, Photoshop, Ethereal, Wireshark, Chrome, Office) even if they can parse medical file formats (DICOM, HL7, FHIR) or edit medical reports. Image editors, network traffic analyzers and text document editors are NOT relevant to healthcare even if they support medical formats, therefore sould be flagged as "False".
    - Format vs. Function: The ability to read a medical file does not make a general tool a medical system. Unless the vulnerability is specifically described as part of a certified medical device implementation, it is Not Relevant.
    
-   Reasoning Check: You must first identify if the product is marketed for general use or clinical use. If it includes medical keywords like "hospital", "health", "care", "healthcare", "doctor", "patient" or "medic" among others or it specifically mentions "patients", it is very most likely relevant to medical systems. If it is general-purpose, the final answer must be "FALSE," regardless of DICOM or medical format support.
+   Reasoning Check: You must first identify the product, then check if the product is explicitly marketed for clinical use. If it includes medical keywords like "hospital", "health", "care", "healthcare", "doctor", "patient" or "medic" among others or it specifically mentions "patients", it is very most likely relevant to medical systems. If it is a general-purpose product, the final answer must be "FALSE," regardless of DICOM or medical format support.
+   If it is not healthcare relevant, the answer must always be "False".
    
 2. Vendors & Products:
    - Extract ONLY explicitly mentioned vendors/products. Do not include version numbers. Normalize capitalization.
