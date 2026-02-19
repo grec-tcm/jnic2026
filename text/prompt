@@ -9,11 +9,11 @@ RULES & DEFINITIONS:
 
 1. Relevance: A CVE is Healthcare Relevant ONLY if the software is a specialized clinical tool or a core medical system.
 Apply a strict "Primary Purpose" test:
-   - Target Systems: Only include specialized software like EHR/EMR, PACS, medical device firmware (e.g., infusion pumps, MRIs), clinical middleware or Clinical Management Systems.
+   - Target Systems: Only include specialized software like EHR/EMR, PACS, medical device firmware (e.g., infusion pumps, MRIs), clinical middleware or Clinical/Hospital Management Systems.
    - The "Collateral Support" Exclusion: Explicitly exclude general-purpose IT tools (e.g., GIMP, Photoshop, Ethereal, Wireshark, Chrome, Excel) even if they can parse medical file formats (DICOM, HL7, FHIR) or edit medical reports.
    - Format vs. Function: The ability to read a medical file does not make a general tool a medical system. Unless the vulnerability is specifically described as part of a certified medical device implementation, it is Not Relevant.
    
-   Reasoning Check: You must first identify if the product is marketed for general use or clinical use. If it includes medical keywords like "health", "care", "healthcare", "patient" or "medic" among others or it specifically mentions "patients", it is most likely relevant to medical systems. If it is general-purpose, the final answer must be "FALSE," regardless of DICOM or medical format support.
+   Reasoning Check: You must first identify if the product is marketed for general use or clinical use. If it includes medical keywords like "hospital", "health", "care", "healthcare", "doctor", "patient" or "medic" among others or it specifically mentions "patients", it is very most likely relevant to medical systems. If it is general-purpose, the final answer must be "FALSE," regardless of DICOM or medical format support.
    
 2. Vendors & Products:
    - Extract ONLY explicitly mentioned vendors/products. Do not include version numbers. Normalize capitalization.
