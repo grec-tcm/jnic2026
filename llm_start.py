@@ -6,11 +6,17 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
 from tqdm import tqdm
 
+# Import the classifier logic
 from llm_classifier import CVEClassifier
+
+# ---------------------------------------------------------
+# CONFIG LOADER
+# ---------------------------------------------------------
 
 def load_config(config_path: str) -> dict:
     """Loads a JSON configuration file if it exists."""
     if not os.path.exists(config_path):
+        # Only warn if the user manually specified a config file that is missing
         if config_path != "config.json":
             logging.warning(f"Config file not found: {config_path}")
         return {}
@@ -21,6 +27,10 @@ def load_config(config_path: str) -> dict:
     except Exception as e:
         logging.error(f"Failed to parse config file: {e}")
         return {}
+
+# ---------------------------------------------------------
+# FILE GROUPING
+# ---------------------------------------------------------
 
 def group_cve_files(json_dir: str) -> dict:
     groups = defaultdict(dict)
@@ -61,13 +71,21 @@ def get_single_file_group(file_path: str) -> dict:
         logging.error(f"Unsupported file extension: {ext}")
         return groups
 
+    # If it's a standard JSON, just add it
     if ext == ".json":
+        # For standard json we might map it to 'nvd' or 'mitre' arbitrarily or handle it as a mix
+        # ideally the classifier expects keys 'nvd' or 'mitre'. 
+        # Let's assume standalone JSONs map to 'nvd' for simplicity or 'mitre' based on content.
+        # But based on previous logic, we need strict keys.
+        # Let's map it to 'mitre' as primary.
         groups[base]["mitre"] = filename
         return groups
 
-    type_key = ext[1:]
+    # If it is .nvd or .mitre, add it and look for its partner
+    type_key = ext[1:] # "nvd" or "mitre"
     groups[base][type_key] = filename
 
+    # Try to find the partner
     partner_ext = ".mitre" if type_key == "nvd" else ".nvd"
     partner_file = base + partner_ext
     
@@ -76,6 +94,9 @@ def get_single_file_group(file_path: str) -> dict:
 
     return groups
 
+# ---------------------------------------------------------
+# WORKER
+# ---------------------------------------------------------
 
 def process_file_group(base: str, file_map: dict, base_dir: str, args: argparse.Namespace, classifier: CVEClassifier, prompt_template: str):
     combined = {}
@@ -83,7 +104,13 @@ def process_file_group(base: str, file_map: dict, base_dir: str, args: argparse.
     for t in ["nvd", "mitre"]:
         fname = file_map.get(t)
         if not fname:
-            continue        
+            continue
+
+        # If base_dir is None, it means we are in single file mode and fname is likely absolute or relative to cwd, 
+        # OR we need to combine it with the dir of the input file.
+        # Actually, let's keep it simple: group_cve_files returns filenames relative to json_dir.
+        # get_single_file_group returns filenames relative to the file's directory.
+        
         path = os.path.join(base_dir, fname)
         try:
             with open(path, "r", encoding="utf-8") as f:
@@ -96,13 +123,20 @@ def process_file_group(base: str, file_map: dict, base_dir: str, args: argparse.
 
     return classifier.classify(combined, prompt_template, base)
 
+# ---------------------------------------------------------
+# MAIN
+# ---------------------------------------------------------
+
 def main():
+    # 1. Parse CLI arguments first to check for --config
     conf_parser = argparse.ArgumentParser(add_help=False)
     conf_parser.add_argument("--config", type=str, default="config.json", help="Path to JSON config file")
     args, remaining_argv = conf_parser.parse_known_args()
 
+    # 2. Load Config File
     file_defaults = load_config(args.config)
 
+    # 3. Define main parser with defaults
     parser = argparse.ArgumentParser(
         description="Process CVEs and classify them via Ollama AI.",
         parents=[conf_parser]
@@ -110,20 +144,21 @@ def main():
     
     parser.set_defaults(**file_defaults)
 
+    # Mutually exclusive group: either a directory OR a single file
     input_group = parser.add_mutually_exclusive_group()
     input_group.add_argument("--json-dir", type=str, default="json", help="Directory containing input JSON files")
     input_group.add_argument("--file", type=str, help="Path to a single .nvd, .mitre, or .json file to process")
 
-    parser.add_argument("--out-dir", type=str, default="output", help="Directory to save output JSON files")
-    parser.add_argument("--ollama-url", type=str, default="http://127.0.0.1:11434/v1/chat/completions", help="Ollama API URL")
-    parser.add_argument("--model", type=str, default="gemma3:12b", help="Model name to use in Ollama")
-    parser.add_argument("--workers", type=int, default=2, help="Maximum concurrent workers")
-    parser.add_argument("--attempts", type=int, default=3, help="Max attempts for API requests and JSON parsing")
-    parser.add_argument("--timeout", type=int, default=120, help="Request timeout in seconds")
-    parser.add_argument("--retry-delay", type=int, default=2, help="Delay between retries in seconds")
-    parser.add_argument("--log-file", type=str, default="cve_processing_errors.log", help="General error log file")
-    parser.add_argument("--failed-log", type=str, default="failed_cves.txt", help="File to output a list of failed CVE IDs")
-    parser.add_argument("--prompt-file", type=str, default="text/prompt", help="Path to the text file containing the prompt")
+    parser.add_argument("--out-dir", type=str, help="Directory to save output JSON files")
+    parser.add_argument("--ollama-url", type=str, help="Ollama API URL")
+    parser.add_argument("--model", type=str, help="Model name to use in Ollama")
+    parser.add_argument("--workers", type=int, help="Maximum concurrent workers")
+    parser.add_argument("--attempts", type=int, help="Max attempts for API requests and JSON parsing")
+    parser.add_argument("--timeout", type=int, help="Request timeout in seconds")
+    parser.add_argument("--retry-delay", type=int, help="Delay between retries in seconds")
+    parser.add_argument("--log-file", type=str, help="General error log file")
+    parser.add_argument("--failed-log", type=str, help="File to output a list of failed CVE IDs")
+    parser.add_argument("--prompt-file", type=str, help="Path to the text file containing the prompt")
 
     args = parser.parse_args()
 
@@ -153,8 +188,10 @@ def main():
         timeout=args.timeout
     )
 
+    # DETERMINE INPUT SOURCE
     if args.file:
         groups = get_single_file_group(args.file)
+        # For single file, the base directory is the directory containing that file
         base_dir = os.path.dirname(os.path.abspath(args.file))
     else:
         groups = group_cve_files(args.json_dir)
@@ -171,6 +208,7 @@ def main():
     print(f"Model: {args.model} | Output: {args.out_dir} | Max Attempts: {args.attempts}")
 
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
+        # Pass base_dir to the worker
         futures = {
             executor.submit(process_file_group, base, fmap, base_dir, args, classifier, prompt_template): base
             for base, fmap in groups.items()

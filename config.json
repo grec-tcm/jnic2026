@@ -9,5 +9,5 @@
   "retry_delay": 2,
   "log_file": "cve_errors.log",
   "failed_log": "cve_failed.txt",
-  "prompt_file": "text/prompt.txt"
+  "prompt_file": "text/prompt"
 }

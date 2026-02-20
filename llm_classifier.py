@@ -5,6 +5,10 @@ import re
 import logging
 from typing import Any, Dict, Optional
 
+# ---------------------------------------------------------
+# UTILITIES
+# ---------------------------------------------------------
+
 def safe_json_loads(s: str) -> dict:
     """Attempts to extract and parse JSON. Raises ValueError on failure."""
     if not s: 
@@ -44,6 +48,10 @@ def _query(payload: dict, url: str, attempts: int, delay: int, timeout: int) -> 
 
     return None
 
+# ---------------------------------------------------------
+# CLASSIFIER CLASS
+# ---------------------------------------------------------
+
 class CVEClassifier:
     def __init__(self, 
                  model: str, 
@@ -59,6 +67,7 @@ class CVEClassifier:
         self.retry_delay = retry_delay
         self.timeout = timeout
         
+        # Load System Role
         try:
             with open(role_file, 'r', encoding='utf-8') as f:
                 self.system_prompt = f.read().strip()
@@ -66,6 +75,7 @@ class CVEClassifier:
             logging.error(f"Role file not found: {role_file}")
             raise
 
+        # Load Output Template Mapping
         try:
             with open(template_file, 'r', encoding='utf-8') as f:
                 self.output_map = json.load(f)
@@ -76,6 +86,7 @@ class CVEClassifier:
     def classify(self, cve_data: Dict[str, Any], prompt_template: str, cve_id_fallback: str) -> Dict[str, Any]:
         start_time = time.time()
         
+        # 1. Get the ID first - this is our "Source of Truth"
         cve_id = (
             cve_data.get("mitre", {})
             .get("cveMetadata", {})
@@ -95,7 +106,7 @@ class CVEClassifier:
             "stream": False,
             "temperature": 0,
             "format": "json",
-            "options": {"num_ctx": 20480, "num_gpu": 99}
+            "options": {"num_gpu": 99}
         }
 
         data = None
@@ -116,12 +127,15 @@ class CVEClassifier:
 
         execution_time = round(time.time() - start_time, 2)
 
+        # 2. Initialize result with the CORRECT ID
         result = {"CVE_ID": cve_id} 
         
         if not data:
             result.update({"error": True, "attempts": attempts_used, "execution_time_seconds": execution_time})
             return result
 
+        # 3. Map AI response keys, but SKIP CVE_ID if it's in the template
+        # so we don't overwrite our valid ID with 'null' from the AI
         for final_key, ai_key in self.output_map.items():
             if final_key == "CVE_ID":
                 continue 
