@@ -94,7 +94,7 @@ class CVEClassifier:
             or cve_id_fallback
         )
 
-        full_json_str = json.dumps(cve_data, indent=2)
+        full_json_str = json.dumps(cve_data, separators=(",", ":"))
         prompt = prompt_template.replace("{full_json_str}", full_json_str)
 
         payload = {

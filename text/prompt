@@ -19,21 +19,21 @@ Apply a strict "Primary Purpose" test:
 2. Vendors & Products:
    - Extract ONLY explicitly mentioned vendors/products. Do not include version numbers. Normalize capitalization.
 3. Category (Choose ONE based on the primary function. If strictly "Not Relevant" above, return null):
-   1: Core Patient Records and Administration (EHR/PAS)
+   1: Data Identity and Management
       SCOPE: Centralized systems for patient history, demographics, billing, and admission/discharge (ADT).
       EXAMPLES: Epic, Cerner, OpenEMR, Patient Portals, Registration Kiosks.
-   2: Departmental Clinical Systems
+   2: Departmental Information systems
       SCOPE: Specialized software managing workflows for specific hospital departments.
       EXAMPLES: LIS (Laboratory Information Systems), RIS (Radiology Information Systems), Pharmacy Management, Surgical Planning Software, Pathology tools.
       EXCLUSION: If it stores images long-term, choose Category 4.
-   3: Medical Devices and IoMT (Internet of Medical Things)
+   3: Data Generation Systems
       SCOPE: Hardware or embedded software responsible for direct patient care, monitoring, or raw data acquisition.
       EXAMPLES: MRI/CT Scanners (firmware), Infusion Pumps, Pacemakers, Bedside Vitals Monitors, Ventilators.
       EXCLUSION: If it is a PC workstation *viewing* the data, choose Category 2.
-   4: Medical Imaging and Archiving (PACS/VNA)
+   4: Storage and Archiving
       SCOPE: Systems dedicated specifically to the storage, long-term archiving, and retrieval of medical images.
       EXAMPLES: PACS servers, VNA (Vendor Neutral Archive), DICOM storage nodes.
-   5: Healthcare Interoperability and Infrastructure
+   5: Interoperability
       SCOPE: Middleware that translates or moves data between different medical systems.
       EXAMPLES: Interface Engines (Mirth, Rhapsody), FHIR Servers, HL7 Gateways, HIE (Health Information Exchange) nodes.
 4. Component (Choose ONE, or null if not relevant, reason before choosing and choose the primary one): "Firmware", "Hardware", or "Software".
